@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenebre Rhythm VR</title>
+
+  <!-- WebXR / Meta Quest -->
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+  <!-- Reproducción legal del video público de YouTube (no descarga el audio). -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <style>
+    :root {
+      --cyan: #38dcff;
+      --pink: #ff4fb4;
+      --purple: #9b74ff;
+      --lime: #89ff9b;
+      --yellow: #ffe36e;
+      --red: #ff5364;
+      --panel: rgba(7, 9, 18, .92);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #03040a;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #menu {
+      position: fixed;
+      z-index: 50;
+      top: 12px;
+      left: 12px;
+      width: min(450px, calc(100vw - 24px));
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+    }
+
+    #menu h1 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    #menu .song {
+      margin: 4px 0 8px;
+      font-size: 12px;
+      color: #b8c5d9;
+      line-height: 1.35;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    button {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 9px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      background: var(--cyan);
+      color: #03151b;
+    }
+
+    button.secondary {
+      background: #28334a;
+      color: #fff;
+    }
+
+    button.danger {
+      background: #8e2940;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: .43;
+      cursor: not-allowed;
+    }
+
+    #sourceBox {
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      display: grid;
+      gap: 7px;
+    }
+
+    #sourceBox label {
+      font-size: 12px;
+      color: #dbe6f5;
+    }
+
+    #audioFile {
+      width: 100%;
+      font-size: 11px;
+      color: #bdc9db;
+    }
+
+    #calibration {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      color: #aebbd0;
+    }
+
+    #offset {
+      min-width: 0;
+      width: 100%;
+    }
+
+    #sourceStatus {
+      font-size: 11px;
+      color: var(--yellow);
+    }
+
+    #ytWrap {
+      margin-top: 8px;
+      overflow: hidden;
+      width: 220px;
+      max-width: 100%;
+      height: 124px;
+      border-radius: 9px;
+      background: #000;
+    }
+
+    #ytPlayer {
+      width: 220px;
+      height: 124px;
+    }
+
+    #hud {
+      position: fixed;
+      z-index: 30;
+      inset: 0;
+      pointer-events: none;
+      text-shadow: 0 2px 8px #000;
+    }
+
+    #score {
+      position: absolute;
+      right: 18px;
+      top: 16px;
+      font-weight: 1000;
+      font-size: clamp(24px, 4vw, 42px);
+      letter-spacing: 1px;
+    }
+
+    #acc {
+      position: absolute;
+      right: 18px;
+      top: 61px;
+      font-weight: 900;
+      font-size: clamp(15px, 2.5vw, 21px);
+    }
+
+    #combo {
+      position: absolute;
+      left: 18px;
+      bottom: 23px;
+      font-weight: 1000;
+      font-size: clamp(42px, 8vw, 78px);
+      line-height: .8;
+    }
+
+    #combo span {
+      display: block;
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #c8d2e4;
+    }
+
+    #judge {
+      position: absolute;
+      left: 50%;
+      bottom: 16%;
+      transform: translateX(-50%) scale(.9);
+      font-size: clamp(42px, 9vw, 90px);
+      font-weight: 1000;
+      opacity: 0;
+      transition: opacity .07s, transform .07s;
+    }
+
+    #judge.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #healthShell {
+      position: absolute;
+      left: 18px;
+      top: 16px;
+      width: min(440px, 45vw);
+      height: 16px;
+      padding: 2px;
+      border: 2px solid rgba(255,255,255,.7);
+      border-radius: 999px;
+      background: rgba(0,0,0,.5);
+    }
+
+    #health {
+      height: 100%;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--lime));
+      transition: width .12s;
+    }
+
+    #songProgress {
+      position: fixed;
+      z-index: 31;
+      left: 0;
+      bottom: 0;
+      height: 4px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
+      pointer-events: none;
+    }
+
+    #cursor {
+      position: fixed;
+      z-index: 35;
+      width: 30px;
+      height: 30px;
+      margin: -15px 0 0 -15px;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow: 0 0 0 4px rgba(56,220,255,.38), 0 0 18px rgba(56,220,255,.9);
+      display: none;
+    }
+
+    #intro {
+      position: fixed;
+      z-index: 25;
+      left: 50%;
+      top: 58%;
+      width: min(680px, calc(100vw - 34px));
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      color: #cbd5e1;
+    }
+
+    #intro strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: clamp(30px, 6vw, 62px);
+      color: #fff;
+    }
+
+    #intro b { color: var(--cyan); }
+
+    @media (max-width: 700px) {
+      #menu {
+        max-height: 46vh;
+        overflow-y: auto;
+      }
+      #ytWrap { display: none; }
+      #healthShell {
+        top: auto;
+        bottom: 105px;
+        width: 45vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="menu">
+  <h1>TENEBRE RHYTHM VR</h1>
+  <div class="song">
+    KEYGEN CHURCH — Tenebre Rosso Sangue (ULTRAKILL)<br>
+    Beat grid: <b>176 BPM</b> · 4/4 · primer pulso de referencia: <b>0.321 s</b>
+  </div>
+
+  <div class="controls">
+    <button id="useYoutube">USAR YOUTUBE</button>
+    <button id="startBtn" disabled>INICIAR</button>
+    <button id="pauseBtn" class="secondary" disabled>PAUSA</button>
+    <button id="restartBtn" class="danger">REINICIAR</button>
+  </div>
+
+  <div id="sourceBox">
+    <label>
+      Para Meta Quest / máxima precisión: carga una copia local autorizada de la canción (MP3/OGG):
+    </label>
+    <input id="audioFile" type="file" accept="audio/*">
+
+    <div id="calibration">
+      <span>Offset</span>
+      <input id="offset" type="range" min="-300" max="300" step="1" value="0">
+      <strong id="offsetValue">0 ms</strong>
+    </div>
+
+    <div id="sourceStatus">Esperando fuente de audio…</div>
+  </div>
+
+  <div id="ytWrap"><div id="ytPlayer"></div></div>
+</div>
+
+<div id="hud">
+  <div id="healthShell"><div id="health"></div></div>
+  <div id="score">00000000</div>
+  <div id="acc">100.00%</div>
+  <div id="combo">0x<span>COMBO</span></div>
+  <div id="judge">300</div>
+</div>
+
+<div id="cursor"></div>
+
+<div id="intro">
+  <strong>TENEBRE RHYTHM VR</strong>
+  Círculos sincronizados al <b>doble tiempo de 176 BPM</b>.<br>
+  PC: apunta con mouse y pulsa clic / Z / X. VR: apunta con el control y pulsa gatillo.
+</div>
+
+<div id="songProgress"></div>
+
+<audio id="localAudio" preload="auto"></audio>
+
+<a-scene
+  id="scene"
+  renderer="antialias: true; colorManagement: true"
+  background="color: #03040a"
+  vr-mode-ui="enabled: true"
+>
+  <a-sky color="#03040a"></a-sky>
+
+  <a-entity light="type: ambient; intensity: .55; color: #a9bfff"></a-entity>
+  <a-entity light="type: directional; intensity: 1; color: #ffffff" position="-2 4 2"></a-entity>
+
+  <!-- Tablero frontal tipo osu! llevado a espacio VR -->
+  <a-plane
+    position="0 1.68 -4.15"
+    width="5.7"
+    height="3.5"
+    color="#080b15"
+    material="shader: flat; opacity: .93; side: double"
+  ></a-plane>
+
+  <!-- Marcos decorativos -->
+  <a-ring
+    position="0 1.68 -4.10"
+    radius-inner="3.05"
+    radius-outer="3.075"
+    color="#172641"
+    rotation="0 0 0"
+  ></a-ring>
+
+  <a-entity id="targetLayer"></a-entity>
+  <a-entity id="effectLayer"></a-entity>
+
+  <a-entity id="rig">
+    <a-camera id="camera" position="0 1.6 0" look-controls wasd-controls="enabled: false">
+      <a-entity
+        id="mouseRay"
+        cursor="rayOrigin: mouse; fuse: false"
+        raycaster="objects: .hit-target; far: 15"
+      ></a-entity>
+    </a-camera>
+
+    <a-entity
+      id="leftHand"
+      laser-controls="hand: left"
+      raycaster="objects: .hit-target; far: 15"
+      line="color: #38dcff; opacity: .9"
+    ></a-entity>
+
+    <a-entity
+      id="rightHand"
+      laser-controls="hand: right"
+      raycaster="objects: .hit-target; far: 15"
+      line="color: #ff4fb4; opacity: .9"
+    ></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+(() => {
+  "use strict";
+
+  // ============================================================
+  // CANCIÓN DE REFERENCIA
+  // ============================================================
+  const YOUTUBE_VIDEO_ID = "L5q4uYj-gyg";
+
+  // Timing conocido de mapas públicos de la pista.
+  const BPM = 176;
+  const BEAT = 60 / BPM;                  // 0.3409090909 s
+  const HALF_BEAT = BEAT / 2;             // corchea
+  const QUARTER_BEAT = BEAT / 4;          // semicorchea
+  const FIRST_BEAT = 0.321;               // 321 ms
+  const FIRST_GAME_NOTE = 11.230;          // referencia de entrada musical
+  const EXPECTED_DURATION = 234.0;         // ~3:54
+
+  // En WebXR / navegador damos algo más de tolerancia que osu! desktop.
+  const WINDOW_300_LOCAL = 0.055;
+  const WINDOW_100_LOCAL = 0.105;
+  const WINDOW_50_LOCAL  = 0.160;
+
+  const WINDOW_300_YT = 0.085;
+  const WINDOW_100_YT = 0.145;
+  const WINDOW_50_YT  = 0.215;
+
+  // Tiempo visible del approach circle.
+  const APPROACH_TIME = 0.78;
+
+  const palette = ["#38dcff", "#ff4fb4", "#9b74ff", "#89ff9b"];
+
+  // Coordenadas originales para nuestro mapa VR.
+  const points = [
+    [-1.95, 2.45], [-1.05, 2.60], [0.05, 2.35], [1.15, 2.62], [1.95, 2.30],
+    [-1.70, 1.70], [-0.80, 1.75], [0.10, 1.60], [1.05, 1.77], [1.85, 1.55],
+    [-1.82, 0.95], [-0.90, 1.05], [0.00, 0.85], [0.95, 1.08], [1.80, 0.95]
+  ];
+
+  // ============================================================
+  // BEATMAP ORIGINAL CONSTRUIDO SOBRE LA REJILLA DE 176 BPM
+  // ============================================================
+  function gridTimeFromSeconds(seconds) {
+    const beatIndex = Math.round((seconds - FIRST_BEAT) / QUARTER_BEAT);
+    return FIRST_BEAT + beatIndex * QUARTER_BEAT;
+  }
+
+  function buildBeatmap() {
+    const notes = [];
+    let id = 0;
+
+    /*
+      Cada sección tiene:
+      start/end: segundos de la canción.
+      step: subdivisión de beat.
+      pattern: máscara rítmica; 1 crea nota, 0 crea descanso.
+      Esto NO copia un mapa de osu!: genera posiciones y secuencias propias.
+    */
+    const sections = [
+      // Intro jugable: patrón más respirado.
+      { start: 11.230, end: 43.90, step: HALF_BEAT, pattern: [1,0,1,1,0,1,0,1] },
+
+      // Primera subida.
+      { start: 43.90, end: 69.80, step: HALF_BEAT, pattern: [1,1,1,0,1,1,0,1] },
+
+      // Zona intensa: semicorcheas en ráfagas.
+      { start: 69.80, end: 100.00, step: QUARTER_BEAT, pattern: [1,1,0,1, 1,0,1,0, 1,1,1,0, 1,0,1,1] },
+
+      // Variación / respiro.
+      { start: 100.00, end: 126.00, step: HALF_BEAT, pattern: [1,0,1,1,1,0,1,0] },
+
+      // Segunda subida.
+      { start: 126.00, end: 145.00, step: HALF_BEAT, pattern: [1,1,0,1,1,1,0,1] },
+
+      // Clímax rápido.
+      { start: 145.00, end: 180.50, step: QUARTER_BEAT, pattern: [1,1,1,0, 1,1,0,1, 1,0,1,1, 1,1,0,0] },
+
+      // Sección de recuperación.
+      { start: 180.50, end: 197.70, step: BEAT, pattern: [1,1,0,1] },
+
+      // Última subida.
+      { start: 197.70, end: 215.40, step: HALF_BEAT, pattern: [1,1,1,0,1,0,1,1] },
+
+      // Final irregular / agresivo.
+      { start: 215.40, end: 232.80, step: QUARTER_BEAT, pattern: [1,0,1,1, 1,1,0,1, 0,1,1,1, 1,0,1,0] }
+    ];
+
+    sections.forEach((section, sectionIndex) => {
+      let t = gridTimeFromSeconds(section.start);
+      let pIndex = 0;
+
+      // Si el snap quedó antes del inicio, avanza.
+      while (t < section.start) t += section.step;
+
+      while (t < section.end) {
+        const use = section.pattern[pIndex % section.pattern.length];
+
+        if (use) {
+          // Secuencia geométrica determinista para no repetir posiciones contiguas.
+          const positionIndex =
+            (id * 7 + sectionIndex * 4 + Math.floor(id / 5) * 3) % points.length;
+
+          const pt = points[positionIndex];
+
+          notes.push({
+            id,
+            time: Number(t.toFixed(6)),
+            x: pt[0],
+            y: pt[1],
+            color: palette[Math.floor(id / 8) % palette.length],
+            number: (id % 8) + 1,
+            spawned: false,
+            resolved: false,
+            el: null,
+            approach: null
+          });
+
+          id++;
+        }
+
+        pIndex++;
+        t += section.step;
+      }
+    });
+
+    return notes;
+  }
+
+  const beatmap = buildBeatmap();
+
+  // ============================================================
+  // FUENTE DE AUDIO
+  // ============================================================
+  let ytPlayer = null;
+  let ytReady = false;
+
+  let sourceMode = null; // "youtube" o "local"
+  let running = false;
+  let paused = false;
+  let raf = 0;
+
+  const localAudio = document.getElementById("localAudio");
+  let localObjectUrl = null;
+
+  // YouTube API llama globalmente a esta función.
+  window.onYouTubeIframeAPIReady = function () {
+    ytPlayer = new YT.Player("ytPlayer", {
+      width: "220",
+      height: "124",
+      videoId: YOUTUBE_VIDEO_ID,
+      playerVars: {
+        playsinline: 1,
+        controls: 1,
+        rel: 0
+      },
+      events: {
+        onReady: () => {
+          ytReady = true;
+          document.getElementById("useYoutube").disabled = false;
+        }
+      }
+    });
+  };
+
+  // Si la API ya estaba cargada antes de este script.
+  if (window.YT && window.YT.Player && !ytPlayer) {
+    window.onYouTubeIframeAPIReady();
+  }
+
+  // ============================================================
+  // UI
+  // ============================================================
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const useYoutubeBtn = document.getElementById("useYoutube");
+  const audioFile = document.getElementById("audioFile");
+
+  const sourceStatus = document.getElementById("sourceStatus");
+  const offsetInput = document.getElementById("offset");
+  const offsetValue = document.getElementById("offsetValue");
+
+  const scoreEl = document.getElementById("score");
+  const accEl = document.getElementById("acc");
+  const comboEl = document.getElementById("combo");
+  const judgeEl = document.getElementById("judge");
+  const healthEl = document.getElementById("health");
+  const progressEl = document.getElementById("songProgress");
+  const cursorEl = document.getElementById("cursor");
+  const introEl = document.getElementById("intro");
+
+  const targetLayer = document.getElementById("targetLayer");
+  const effectLayer = document.getElementById("effectLayer");
+
+  let score = 0;
+  let combo = 0;
+  let maxCombo = 0;
+  let hp = 100;
+
+  let h300 = 0;
+  let h100 = 0;
+  let h50 = 0;
+  let misses = 0;
+
+  let nextSpawn = 0;
+  let judgeTimer = 0;
+
+  const active = new Map();
+
+  function offsetSeconds() {
+    return Number(offsetInput.value) / 1000;
+  }
+
+  offsetInput.addEventListener("input", () => {
+    offsetValue.textContent = `${offsetInput.value} ms`;
+  });
+
+  // ============================================================
+  // SELECCIÓN DE AUDIO
+  // ============================================================
+  useYoutubeBtn.addEventListener("click", () => {
+    if (!ytReady) {
+      sourceStatus.textContent = "YouTube todavía está cargando…";
+      return;
+    }
+
+    sourceMode = "youtube";
+    sourceStatus.textContent =
+      "Fuente: YouTube. Para precisión competitiva/VR se recomienda archivo local.";
+    startBtn.disabled = false;
+  });
+
+  audioFile.addEventListener("change", event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (localObjectUrl) URL.revokeObjectURL(localObjectUrl);
+    localObjectUrl = URL.createObjectURL(file);
+    localAudio.src = localObjectUrl;
+
+    sourceMode = "local";
+    sourceStatus.textContent = `Fuente local: ${file.name}`;
+    startBtn.disabled = false;
+
+    if (ytPlayer && ytReady) {
+      try { ytPlayer.pauseVideo(); } catch (_) {}
+    }
+  });
+
+  // ============================================================
+  // RELOJ: el juego SIEMPRE se guía por el audio
+  // ============================================================
+  function audioTime() {
+    let t = 0;
+
+    if (sourceMode === "youtube") {
+      if (!ytPlayer || !ytReady) return 0;
+      try {
+        t = Number(ytPlayer.getCurrentTime()) || 0;
+      } catch (_) {
+        t = 0;
+      }
+    } else if (sourceMode === "local") {
+      t = localAudio.currentTime || 0;
+    }
+
+    return t + offsetSeconds();
+  }
+
+  function duration() {
+    if (sourceMode === "local" && Number.isFinite(localAudio.duration)) {
+      return localAudio.duration;
+    }
+    return EXPECTED_DURATION;
+  }
+
+  function windows() {
+    if (sourceMode === "youtube") {
+      return {
+        w300: WINDOW_300_YT,
+        w100: WINDOW_100_YT,
+        w50: WINDOW_50_YT
+      };
+    }
+
+    return {
+      w300: WINDOW_300_LOCAL,
+      w100: WINDOW_100_LOCAL,
+      w50: WINDOW_50_LOCAL
+    };
+  }
+
+  // ============================================================
+  // HIT OBJECTS
+  // ============================================================
+  function createCircle(note) {
+    const root = document.createElement("a-entity");
+    root.setAttribute("position", `${note.x} ${note.y} -4.03`);
+    root.setAttribute("scale", ".55 .55 .55");
+
+    const shadow = document.createElement("a-circle");
+    shadow.setAttribute("radius", ".31");
+    shadow.setAttribute("position", ".025 -.025 -.006");
+    shadow.setAttribute("color", "#000");
+    shadow.setAttribute("material", "shader: flat; opacity: .55");
+
+    const white = document.createElement("a-circle");
+    white.setAttribute("radius", ".29");
+    white.setAttribute("color", "#fff");
+    white.setAttribute("material", "shader: flat");
+
+    const core = document.createElement("a-circle");
+    core.setAttribute("radius", ".238");
+    core.setAttribute("position", "0 0 .006");
+    core.setAttribute("color", note.color);
+    core.setAttribute("material", "shader: flat; opacity: .96");
+    core.classList.add("hit-target");
+    core.dataset.noteId = String(note.id);
+
+    const number = document.createElement("a-text");
+    number.setAttribute("value", String(note.number));
+    number.setAttribute("align", "center");
+    number.setAttribute("anchor", "center");
+    number.setAttribute("baseline", "center");
+    number.setAttribute("position", "0 0 .014");
+    number.setAttribute("width", "2.4");
+    number.setAttribute("color", "#fff");
+
+    const approach = document.createElement("a-ring");
+    approach.setAttribute("radius-inner", ".307");
+    approach.setAttribute("radius-outer", ".327");
+    approach.setAttribute("position", "0 0 .018");
+    approach.setAttribute("color", note.color);
+    approach.setAttribute("material", "shader: flat; opacity: .96; side: double");
+    approach.setAttribute("scale", "4 4 4");
+
+    root.append(shadow, white, core, number, approach);
+
+    core.addEventListener("click", event => {
+      event.stopPropagation();
+      attemptHit(note.id);
+    });
+
+    targetLayer.appendChild(root);
+
+    note.el = root;
+    note.approach = approach;
+    note.spawned = true;
+    active.set(note.id, note);
+
+    root.setAttribute(
+      "animation__spawn",
+      "property: scale; to: 1 1 1; dur: 80; easing: easeOutQuad"
+    );
+  }
+
+  function removeCircle(note) {
+    active.delete(note.id);
+
+    if (note.el && note.el.parentNode) {
+      note.el.parentNode.removeChild(note.el);
+    }
+
+    note.el = null;
+    note.approach = null;
+  }
+
+  function showWorldResult(note, text, color) {
+    const e = document.createElement("a-text");
+    e.setAttribute("position", `${note.x} ${note.y} -3.96`);
+    e.setAttribute("value", String(text));
+    e.setAttribute("align", "center");
+    e.setAttribute("width", "2");
+    e.setAttribute("color", color);
+
+    effectLayer.appendChild(e);
+
+    e.setAttribute(
+      "animation__up",
+      `property: position; to: ${note.x} ${note.y + .28} -3.95; dur: 360; easing: easeOutQuad`
+    );
+
+    setTimeout(() => {
+      if (e.parentNode) e.parentNode.removeChild(e);
+    }, 380);
+  }
+
+  // ============================================================
+  // SCORE / JUICIO
+  // ============================================================
+  function accuracy() {
+    const total = h300 + h100 + h50 + misses;
+    if (!total) return 100;
+
+    return (
+      (h300 * 300 + h100 * 100 + h50 * 50) /
+      (total * 300)
+    ) * 100;
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score).padStart(8, "0");
+    accEl.textContent = `${accuracy().toFixed(2)}%`;
+    comboEl.innerHTML = `${combo}x<span>COMBO</span>`;
+    healthEl.style.width = `${Math.max(0, Math.min(100, hp))}%`;
+  }
+
+  function showJudge(value, errorMs) {
+    let color = "#fff";
+    if (value === 300) color = "#75e5ff";
+    else if (value === 100) color = "#8cff9d";
+    else if (value === 50) color = "#ffe36e";
+    else color = "#ff5364";
+
+    judgeEl.textContent =
+      value === 0 ? "MISS" : `${value}  ${errorMs >= 0 ? "+" : ""}${Math.round(errorMs)}ms`;
+
+    judgeEl.style.color = color;
+    judgeEl.classList.add("show");
+
+    clearTimeout(judgeTimer);
+    judgeTimer = setTimeout(() => judgeEl.classList.remove("show"), 210);
+  }
+
+  function attemptHit(id) {
+    if (!running || paused) return;
+
+    const note = beatmap[id];
+    if (!note || note.resolved || !note.spawned) return;
+
+    // Notelock simple: prioriza el objeto anterior.
+    for (const current of active.values()) {
+      if (!current.resolved && current.id < id) return;
+    }
+
+    const t = audioTime();
+    const error = t - note.time;
+    const absError = Math.abs(error);
+
+    const w = windows();
+
+    // Demasiado pronto: no consume la nota.
+    if (error < -w.w50) {
+      if (note.el) {
+        note.el.setAttribute(
+          "animation__shake",
+          "property: rotation; from: 0 0 -3; to: 0 0 3; dir: alternate; loop: 2; dur: 30"
+        );
+      }
+      return;
+    }
+
+    if (absError <= w.w300) {
+      resolveHit(note, 300, error);
+    } else if (absError <= w.w100) {
+      resolveHit(note, 100, error);
+    } else if (absError <= w.w50) {
+      resolveHit(note, 50, error);
+    }
+  }
+
+  function resolveHit(note, value, errorSeconds) {
+    if (note.resolved) return;
+    note.resolved = true;
+
+    combo++;
+    maxCombo = Math.max(maxCombo, combo);
+
+    const baseBonus = Math.floor(Math.max(combo - 1, 0) * value * .08);
+    score += value + baseBonus;
+
+    if (value === 300) {
+      h300++;
+      hp = Math.min(100, hp + 2.5);
+    } else if (value === 100) {
+      h100++;
+      hp = Math.min(100, hp + .8);
+    } else {
+      h50++;
+      hp = Math.max(0, hp - 1.2);
+    }
+
+    const color =
+      value === 300 ? "#75e5ff" :
+      value === 100 ? "#8cff9d" :
+      "#ffe36e";
+
+    showWorldResult(note, value, color);
+    showJudge(value, errorSeconds * 1000);
+
+    if (note.el) {
+      note.el.setAttribute(
+        "animation__hit",
+        "property: scale; to: 1.35 1.35 1.35; dur: 70; easing: easeOutQuad"
+      );
+    }
+
+    setTimeout(() => removeCircle(note), 75);
+    updateHud();
+  }
+
+  function miss(note) {
+    if (note.resolved) return;
+    note.resolved = true;
+
+    combo = 0;
+    misses++;
+    hp = Math.max(0, hp - 7);
+
+    showWorldResult(note, "MISS", "#ff5364");
+    showJudge(0, 0);
+
+    removeCircle(note);
+    updateHud();
+  }
+
+  // ============================================================
+  // GAME LOOP SINCRONIZADO AL AUDIO
+  // ============================================================
+  function spawnNotes(t) {
+    while (
+      nextSpawn < beatmap.length &&
+      beatmap[nextSpawn].time - APPROACH_TIME <= t
+    ) {
+      const note = beatmap[nextSpawn];
+
+      if (!note.spawned && !note.resolved) {
+        createCircle(note);
+      }
+
+      nextSpawn++;
+    }
+  }
+
+  function updateNotes(t) {
+    const w = windows();
+
+    active.forEach(note => {
+      if (note.resolved) return;
+
+      const left = note.time - t;
+      const progress = Math.max(0, Math.min(1, left / APPROACH_TIME));
+      const scale = 1 + progress * 3;
+
+      if (note.approach) {
+        note.approach.setAttribute("scale", `${scale} ${scale} ${scale}`);
+      }
+
+      if (t > note.time + w.w50) {
+        miss(note);
+      }
+    });
+  }
+
+  function loop() {
+    if (!running) return;
+
+    if (!paused) {
+      const t = audioTime();
+
+      spawnNotes(t);
+      updateNotes(t);
+
+      const d = duration();
+      progressEl.style.width = `${Math.max(0, Math.min(100, (t / d) * 100))}%`;
+
+      if (t >= Math.min(d, EXPECTED_DURATION) - .25) {
+        finish();
+        return;
+      }
+    }
+
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ============================================================
+  // INICIAR / PAUSAR / REINICIAR
+  // ============================================================
+  function resetMap() {
+    cancelAnimationFrame(raf);
+
+    beatmap.forEach(note => {
+      note.spawned = false;
+      note.resolved = false;
+      note.el = null;
+      note.approach = null;
+    });
+
+    active.clear();
+    targetLayer.innerHTML = "";
+    effectLayer.innerHTML = "";
+
+    nextSpawn = 0;
+
+    score = 0;
+    combo = 0;
+    maxCombo = 0;
+    hp = 100;
+
+    h300 = 0;
+    h100 = 0;
+    h50 = 0;
+    misses = 0;
+
+    progressEl.style.width = "0%";
+    updateHud();
+  }
+
+  async function start() {
+    if (!sourceMode) return;
+
+    resetMap();
+
+    running = true;
+    paused = false;
+
+    introEl.style.display = "none";
+    cursorEl.style.display = "block";
+
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    pauseBtn.textContent = "PAUSA";
+
+    if (sourceMode === "youtube") {
+      if (!ytPlayer || !ytReady) return;
+
+      try {
+        ytPlayer.seekTo(0, true);
+        ytPlayer.playVideo();
+      } catch (_) {}
+    } else {
+      localAudio.currentTime = 0;
+
+      try {
+        await localAudio.play();
+      } catch (error) {
+        sourceStatus.textContent = "No fue posible iniciar el audio local.";
+        running = false;
+        startBtn.disabled = false;
+        return;
+      }
+    }
+
+    loop();
+  }
+
+  function pause() {
+    if (!running) return;
+
+    paused = !paused;
+
+    if (paused) {
+      pauseBtn.textContent = "CONTINUAR";
+
+      if (sourceMode === "youtube") {
+        try { ytPlayer.pauseVideo(); } catch (_) {}
+      } else {
+        localAudio.pause();
+      }
+    } else {
+      pauseBtn.textContent = "PAUSA";
+
+      if (sourceMode === "youtube") {
+        try { ytPlayer.playVideo(); } catch (_) {}
+      } else {
+        localAudio.play().catch(() => {});
+      }
+    }
+  }
+
+  function restart() {
+    running = false;
+    paused = false;
+
+    cancelAnimationFrame(raf);
+
+    if (sourceMode === "youtube" && ytPlayer && ytReady) {
+      try {
+        ytPlayer.pauseVideo();
+        ytPlayer.seekTo(0, true);
+      } catch (_) {}
+    }
+
+    if (sourceMode === "local") {
+      localAudio.pause();
+      localAudio.currentTime = 0;
+    }
+
+    resetMap();
+
+    startBtn.disabled = !sourceMode;
+    pauseBtn.disabled = true;
+    pauseBtn.textContent = "PAUSA";
+
+    cursorEl.style.display = "none";
+    introEl.style.display = "block";
+  }
+
+  function finish() {
+    running = false;
+    cancelAnimationFrame(raf);
+
+    targetLayer.innerHTML = "";
+    active.clear();
+
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    cursorEl.style.display = "none";
+
+    judgeEl.innerHTML =
+      `${accuracy().toFixed(2)}%<br>` +
+      `<span style="font-size:16px">300:${h300} · 100:${h100} · 50:${h50} · MISS:${misses} · MAX ${maxCombo}x</span>`;
+    judgeEl.style.color = "#fff";
+    judgeEl.classList.add("show");
+  }
+
+  startBtn.addEventListener("click", start);
+  pauseBtn.addEventListener("click", pause);
+  restartBtn.addEventListener("click", restart);
+
+  // ============================================================
+  // INPUT PC
+  // ============================================================
+  window.addEventListener("mousemove", event => {
+    cursorEl.style.left = `${event.clientX}px`;
+    cursorEl.style.top = `${event.clientY}px`;
+  });
+
+  function hitHovered() {
+    if (!running || paused) return;
+
+    const entity = document.getElementById("mouseRay");
+    if (!entity || !entity.components || !entity.components.raycaster) return;
+
+    const intersections = entity.components.raycaster.intersectedEls || [];
+    const target = intersections.find(el => el.classList.contains("hit-target"));
+
+    if (!target) return;
+
+    const id = Number(target.dataset.noteId);
+    if (Number.isInteger(id)) attemptHit(id);
+  }
+
+  window.addEventListener("keydown", event => {
+    if (event.repeat) return;
+
+    if (
+      event.code === "KeyZ" ||
+      event.code === "KeyX" ||
+      event.code === "Space"
+    ) {
+      event.preventDefault();
+      hitHovered();
+    }
+
+    if (event.code === "Escape" && running) {
+      pause();
+    }
+  });
+
+  // ============================================================
+  // INPUT META QUEST / WEBXR
+  // ============================================================
+  function bindVrHand(id) {
+    const hand = document.getElementById(id);
+
+    hand.addEventListener("triggerdown", () => {
+      if (!running || paused) return;
+
+      const ray = hand.components && hand.components.raycaster;
+      if (!ray) return;
+
+      const intersections = ray.intersectedEls || [];
+      const target = intersections.find(el => el.classList.contains("hit-target"));
+
+      if (!target) return;
+
+      const noteId = Number(target.dataset.noteId);
+      if (Number.isInteger(noteId)) attemptHit(noteId);
+    });
+  }
+
+  bindVrHand("leftHand");
+  bindVrHand("rightHand");
+
+  updateHud();
+})();
+</script>
+
+</body>
+</html>
