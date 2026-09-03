@@ -1,397 +1,492 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tenebre Rhythm VR</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenebre Rhythm 360 - PC / VR</title>
 
-  <!-- WebXR / Meta Quest -->
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-
-  <!-- Reproducción legal del video público de YouTube (no descarga el audio). -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <style>
-    :root {
-      --cyan: #38dcff;
-      --pink: #ff4fb4;
-      --purple: #9b74ff;
-      --lime: #89ff9b;
-      --yellow: #ffe36e;
-      --red: #ff5364;
-      --panel: rgba(7, 9, 18, .92);
+    :root{
+      --bg:#03040a;
+      --panel:rgba(8,10,20,.94);
+      --border:rgba(255,255,255,.16);
+      --text:#f7fbff;
+      --muted:#aebbd0;
+      --accent:#46ddff;
+      --pink:#ff5abf;
     }
 
-    * { box-sizing: border-box; }
-
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #03040a;
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Arial,Helvetica,sans-serif;
     }
 
-    #menu {
-      position: fixed;
-      z-index: 50;
-      top: 12px;
-      left: 12px;
-      width: min(450px, calc(100vw - 24px));
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: var(--panel);
-      backdrop-filter: blur(10px);
+    button,input{font:inherit}
+
+    button{
+      min-height:42px;
+      padding:0 14px;
+      border:0;
+      border-radius:10px;
+      font-weight:900;
+      cursor:pointer;
+      background:var(--accent);
+      color:#03151b;
     }
 
-    #menu h1 {
-      margin: 0;
-      font-size: 21px;
+    button.secondary{
+      background:#29344c;
+      color:#fff;
     }
 
-    #menu .song {
-      margin: 4px 0 8px;
-      font-size: 12px;
-      color: #b8c5d9;
-      line-height: 1.35;
+    button.danger{
+      background:#8e2940;
+      color:#fff;
     }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 9px;
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
     }
 
-    button {
-      min-height: 40px;
-      padding: 0 12px;
-      border: 0;
-      border-radius: 9px;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 900;
-      cursor: pointer;
-      background: var(--cyan);
-      color: #03151b;
+    /* =========================
+       MENÚ PRINCIPAL DE MODOS
+       ========================= */
+    #modeMenu{
+      position:fixed;
+      z-index:100;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:radial-gradient(circle at center,rgba(30,45,75,.5),rgba(2,3,8,.96));
     }
 
-    button.secondary {
-      background: #28334a;
-      color: #fff;
+    .modeCard{
+      width:min(820px,100%);
+      padding:22px;
+      border:1px solid var(--border);
+      border-radius:20px;
+      background:var(--panel);
+      backdrop-filter:blur(12px);
     }
 
-    button.danger {
-      background: #8e2940;
-      color: #fff;
+    .modeCard h1{
+      margin:0 0 6px;
+      font-size:clamp(24px,4vw,42px);
     }
 
-    button:disabled {
-      opacity: .43;
-      cursor: not-allowed;
+    .modeCard p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.45;
     }
 
-    #sourceBox {
-      margin-top: 9px;
-      padding-top: 9px;
-      border-top: 1px solid rgba(255,255,255,.12);
-      display: grid;
-      gap: 7px;
+    .modeGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+      margin-top:18px;
     }
 
-    #sourceBox label {
-      font-size: 12px;
-      color: #dbe6f5;
+    .modeOption{
+      padding:18px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
     }
 
-    #audioFile {
-      width: 100%;
-      font-size: 11px;
-      color: #bdc9db;
+    .modeOption h2{
+      margin:0 0 7px;
+      font-size:20px;
     }
 
-    #calibration {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 8px;
-      align-items: center;
-      font-size: 11px;
-      color: #aebbd0;
+    .modeOption p{
+      min-height:58px;
+      font-size:13px;
     }
 
-    #offset {
-      min-width: 0;
-      width: 100%;
+    .modeOption button{
+      width:100%;
+      margin-top:12px;
     }
 
-    #sourceStatus {
-      font-size: 11px;
-      color: var(--yellow);
+    .freqLegend{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:8px;
+      margin-top:18px;
     }
 
-    #ytWrap {
-      margin-top: 8px;
-      overflow: hidden;
-      width: 220px;
-      max-width: 100%;
-      height: 124px;
-      border-radius: 9px;
-      background: #000;
+    .legendItem{
+      padding:8px;
+      border-radius:10px;
+      background:rgba(255,255,255,.04);
+      text-align:center;
+      font-size:11px;
+      color:var(--muted);
     }
 
-    #ytPlayer {
-      width: 220px;
-      height: 124px;
+    .legendItem strong{
+      display:block;
+      color:#fff;
+      margin-bottom:3px;
+      font-size:12px;
     }
 
-    #hud {
-      position: fixed;
-      z-index: 30;
-      inset: 0;
-      pointer-events: none;
-      text-shadow: 0 2px 8px #000;
+    /* =========================
+       PANEL DE JUEGO
+       ========================= */
+    #gamePanel{
+      position:fixed;
+      z-index:60;
+      top:12px;
+      left:12px;
+      width:min(430px,calc(100vw - 24px));
+      padding:13px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:rgba(7,9,17,.9);
+      backdrop-filter:blur(10px);
+      display:none;
     }
 
-    #score {
-      position: absolute;
-      right: 18px;
-      top: 16px;
-      font-weight: 1000;
-      font-size: clamp(24px, 4vw, 42px);
-      letter-spacing: 1px;
+    #gamePanel h2{
+      margin:0;
+      font-size:18px;
     }
 
-    #acc {
-      position: absolute;
-      right: 18px;
-      top: 61px;
-      font-weight: 900;
-      font-size: clamp(15px, 2.5vw, 21px);
+    #gamePanel .sub{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.35;
     }
 
-    #combo {
-      position: absolute;
-      left: 18px;
-      bottom: 23px;
-      font-weight: 1000;
-      font-size: clamp(42px, 8vw, 78px);
-      line-height: .8;
+    .controlRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      margin-top:9px;
     }
 
-    #combo span {
-      display: block;
-      margin-top: 10px;
-      font-size: 11px;
-      letter-spacing: 3px;
-      color: #c8d2e4;
+    #audioFile{
+      width:100%;
+      margin-top:8px;
+      color:#c3cede;
+      font-size:11px;
     }
 
-    #judge {
-      position: absolute;
-      left: 50%;
-      bottom: 16%;
-      transform: translateX(-50%) scale(.9);
-      font-size: clamp(42px, 9vw, 90px);
-      font-weight: 1000;
-      opacity: 0;
-      transition: opacity .07s, transform .07s;
+    #status{
+      margin-top:7px;
+      color:#ffe36e;
+      font-size:11px;
     }
 
-    #judge.show {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
+    #ytWrap{
+      margin-top:8px;
+      width:200px;
+      height:112px;
+      overflow:hidden;
+      border-radius:8px;
+      background:#000;
     }
 
-    #healthShell {
-      position: absolute;
-      left: 18px;
-      top: 16px;
-      width: min(440px, 45vw);
-      height: 16px;
-      padding: 2px;
-      border: 2px solid rgba(255,255,255,.7);
-      border-radius: 999px;
-      background: rgba(0,0,0,.5);
+    #ytPlayer{
+      width:200px;
+      height:112px;
     }
 
-    #health {
-      height: 100%;
-      width: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--cyan), var(--lime));
-      transition: width .12s;
+    /* =========================
+       HUD
+       ========================= */
+    #hud{
+      position:fixed;
+      z-index:40;
+      inset:0;
+      pointer-events:none;
+      display:none;
+      text-shadow:0 2px 8px #000;
     }
 
-    #songProgress {
-      position: fixed;
-      z-index: 31;
-      left: 0;
-      bottom: 0;
-      height: 4px;
-      width: 0%;
-      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
-      pointer-events: none;
+    #score{
+      position:absolute;
+      right:18px;
+      top:18px;
+      font-size:clamp(24px,4vw,42px);
+      font-weight:1000;
     }
 
-    #cursor {
-      position: fixed;
-      z-index: 35;
-      width: 30px;
-      height: 30px;
-      margin: -15px 0 0 -15px;
-      border: 3px solid #fff;
-      border-radius: 50%;
-      pointer-events: none;
-      box-shadow: 0 0 0 4px rgba(56,220,255,.38), 0 0 18px rgba(56,220,255,.9);
-      display: none;
+    #accuracy{
+      position:absolute;
+      right:18px;
+      top:64px;
+      font-size:clamp(15px,2.5vw,21px);
+      font-weight:900;
     }
 
-    #intro {
-      position: fixed;
-      z-index: 25;
-      left: 50%;
-      top: 58%;
-      width: min(680px, calc(100vw - 34px));
-      transform: translate(-50%, -50%);
-      text-align: center;
-      pointer-events: none;
-      color: #cbd5e1;
+    #combo{
+      position:absolute;
+      left:18px;
+      bottom:24px;
+      font-size:clamp(44px,8vw,76px);
+      font-weight:1000;
+      line-height:.85;
     }
 
-    #intro strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: clamp(30px, 6vw, 62px);
-      color: #fff;
+    #combo small{
+      display:block;
+      margin-top:10px;
+      font-size:11px;
+      letter-spacing:3px;
+      color:#c6d1e2;
     }
 
-    #intro b { color: var(--cyan); }
+    #judge{
+      position:absolute;
+      left:50%;
+      bottom:16%;
+      transform:translateX(-50%) scale(.92);
+      opacity:0;
+      font-size:clamp(40px,8vw,82px);
+      font-weight:1000;
+      transition:opacity .08s,transform .08s;
+    }
 
-    @media (max-width: 700px) {
-      #menu {
-        max-height: 46vh;
-        overflow-y: auto;
-      }
-      #ytWrap { display: none; }
-      #healthShell {
-        top: auto;
-        bottom: 105px;
-        width: 45vw;
-      }
+    #judge.show{
+      opacity:1;
+      transform:translateX(-50%) scale(1);
+    }
+
+    #healthShell{
+      position:absolute;
+      left:18px;
+      top:18px;
+      width:min(420px,44vw);
+      height:16px;
+      padding:2px;
+      border:2px solid rgba(255,255,255,.7);
+      border-radius:999px;
+      background:rgba(0,0,0,.5);
+    }
+
+    #health{
+      height:100%;
+      width:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg,#46ddff,#88ff9a);
+      transition:width .12s;
+    }
+
+    #modeBadge{
+      position:absolute;
+      left:18px;
+      top:44px;
+      font-size:11px;
+      color:#c7d4e6;
+      letter-spacing:2px;
+    }
+
+    #bandBadge{
+      position:absolute;
+      left:50%;
+      top:20px;
+      transform:translateX(-50%);
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(0,0,0,.42);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:1px;
+    }
+
+    #progress{
+      position:fixed;
+      z-index:42;
+      left:0;
+      bottom:0;
+      height:4px;
+      width:0;
+      background:linear-gradient(90deg,#46ddff,#9d7cff,#ff5abf);
+      pointer-events:none;
+    }
+
+    #cursor{
+      position:fixed;
+      z-index:50;
+      width:30px;
+      height:30px;
+      margin:-15px 0 0 -15px;
+      border:3px solid white;
+      border-radius:50%;
+      box-shadow:0 0 0 4px rgba(70,221,255,.35),0 0 18px rgba(70,221,255,.85);
+      pointer-events:none;
+      display:none;
+    }
+
+    @media(max-width:760px){
+      .modeGrid{grid-template-columns:1fr}
+      .freqLegend{grid-template-columns:1fr 1fr}
+      #ytWrap{display:none}
+      #gamePanel{max-height:45vh;overflow:auto}
     }
   </style>
 </head>
 
 <body>
 
-<div id="menu">
-  <h1>TENEBRE RHYTHM VR</h1>
-  <div class="song">
-    KEYGEN CHURCH — Tenebre Rosso Sangue (ULTRAKILL)<br>
-    Beat grid: <b>176 BPM</b> · 4/4 · primer pulso de referencia: <b>0.321 s</b>
+<!-- ======================================================
+     MENÚ DE MODALIDAD
+     ====================================================== -->
+<div id="modeMenu">
+  <div class="modeCard">
+    <h1>TENEBRE RHYTHM 360</h1>
+    <p>
+      Selecciona la modalidad. Las figuras cambian según la banda de frecuencia
+      y su movimiento cambia desde ritmos lentos hasta rápidos.
+    </p>
+
+    <div class="modeGrid">
+      <div class="modeOption">
+        <h2>🖥️ MODO PC — pantalla recta</h2>
+        <p>
+          Las figuras aparecen sobre un tablero frontal, como un juego de ritmo
+          tradicional. Apunta con el mouse y pulsa clic, Z o X.
+        </p>
+        <button id="selectPc">JUGAR EN PC</button>
+      </div>
+
+      <div class="modeOption">
+        <h2>🥽 MODO VR — entorno 360°</h2>
+        <p>
+          Las figuras 3D aparecen en posiciones aleatorias alrededor del jugador:
+          frente, lados, atrás, arriba y abajo. Usa los mandos Meta Quest 2.
+        </p>
+        <button id="selectVr">JUGAR EN VR 360°</button>
+      </div>
+    </div>
+
+    <div class="freqLegend">
+      <div class="legendItem"><strong>GRAVES</strong>20–120 Hz<br>Prisma octagonal<br>Lento</div>
+      <div class="legendItem"><strong>GRAVE–MEDIO</strong>120–350 Hz<br>Dodecaedro<br>Medio-lento</div>
+      <div class="legendItem"><strong>MEDIOS</strong>350–2000 Hz<br>Tetraedro<br>Medio</div>
+      <div class="legendItem"><strong>AGUDOS</strong>2–6 kHz<br>Octaedro<br>Rápido</div>
+      <div class="legendItem"><strong>MUY AGUDOS</strong>6–16 kHz<br>Icosaedro<br>Muy rápido</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     PANEL
+     ====================================================== -->
+<div id="gamePanel">
+  <h2 id="panelTitle">TENEBRE RHYTHM</h2>
+  <div class="sub">
+    KEYGEN CHURCH — Tenebre Rosso Sangue · 176 BPM · 4/4
   </div>
 
-  <div class="controls">
+  <div class="controlRow">
     <button id="useYoutube">USAR YOUTUBE</button>
     <button id="startBtn" disabled>INICIAR</button>
     <button id="pauseBtn" class="secondary" disabled>PAUSA</button>
+    <button id="menuBtn" class="secondary">MODOS</button>
     <button id="restartBtn" class="danger">REINICIAR</button>
   </div>
 
-  <div id="sourceBox">
-    <label>
-      Para Meta Quest / máxima precisión: carga una copia local autorizada de la canción (MP3/OGG):
-    </label>
-    <input id="audioFile" type="file" accept="audio/*">
+  <input id="audioFile" type="file" accept="audio/*" />
 
-    <div id="calibration">
-      <span>Offset</span>
-      <input id="offset" type="range" min="-300" max="300" step="1" value="0">
-      <strong id="offsetValue">0 ms</strong>
-    </div>
-
-    <div id="sourceStatus">Esperando fuente de audio…</div>
+  <div id="status">
+    Para análisis real de frecuencias, usa una copia local autorizada del audio.
   </div>
 
   <div id="ytWrap"><div id="ytPlayer"></div></div>
 </div>
 
+<!-- ======================================================
+     HUD
+     ====================================================== -->
 <div id="hud">
   <div id="healthShell"><div id="health"></div></div>
+  <div id="modeBadge">MODO: —</div>
+  <div id="bandBadge">FRECUENCIA: —</div>
   <div id="score">00000000</div>
-  <div id="acc">100.00%</div>
-  <div id="combo">0x<span>COMBO</span></div>
+  <div id="accuracy">100.00%</div>
+  <div id="combo">0x<small>COMBO</small></div>
   <div id="judge">300</div>
 </div>
 
+<div id="progress"></div>
 <div id="cursor"></div>
-
-<div id="intro">
-  <strong>TENEBRE RHYTHM VR</strong>
-  Círculos sincronizados al <b>doble tiempo de 176 BPM</b>.<br>
-  PC: apunta con mouse y pulsa clic / Z / X. VR: apunta con el control y pulsa gatillo.
-</div>
-
-<div id="songProgress"></div>
 
 <audio id="localAudio" preload="auto"></audio>
 
+<!-- ======================================================
+     ESCENA
+     ====================================================== -->
 <a-scene
   id="scene"
-  renderer="antialias: true; colorManagement: true"
-  background="color: #03040a"
-  vr-mode-ui="enabled: true"
+  background="color:#03040a"
+  renderer="antialias:true; colorManagement:true"
+  vr-mode-ui="enabled:true"
 >
   <a-sky color="#03040a"></a-sky>
 
-  <a-entity light="type: ambient; intensity: .55; color: #a9bfff"></a-entity>
-  <a-entity light="type: directional; intensity: 1; color: #ffffff" position="-2 4 2"></a-entity>
+  <a-entity light="type:ambient; intensity:.7; color:#b9c9ff"></a-entity>
+  <a-entity light="type:directional; intensity:1; color:#ffffff" position="-2 4 2"></a-entity>
 
-  <!-- Tablero frontal tipo osu! llevado a espacio VR -->
+  <!-- tablero frontal solo para PC -->
   <a-plane
-    position="0 1.68 -4.15"
-    width="5.7"
+    id="pcBoard"
+    position="0 1.65 -4.2"
+    width="5.8"
     height="3.5"
-    color="#080b15"
-    material="shader: flat; opacity: .93; side: double"
+    color="#090c16"
+    material="shader:flat; opacity:.94; side:double"
+    visible="false"
   ></a-plane>
 
-  <!-- Marcos decorativos -->
-  <a-ring
-    position="0 1.68 -4.10"
-    radius-inner="3.05"
-    radius-outer="3.075"
-    color="#172641"
-    rotation="0 0 0"
-  ></a-ring>
+  <!-- ambiente 360 -->
+  <a-entity id="vrEnvironment" visible="false">
+    <a-ring position="0 1.6 -6" radius-inner="5.7" radius-outer="5.75" color="#14223d"></a-ring>
+    <a-ring position="0 1.6 6" rotation="0 180 0" radius-inner="5.7" radius-outer="5.75" color="#14223d"></a-ring>
+    <a-ring position="6 1.6 0" rotation="0 -90 0" radius-inner="5.7" radius-outer="5.75" color="#14223d"></a-ring>
+    <a-ring position="-6 1.6 0" rotation="0 90 0" radius-inner="5.7" radius-outer="5.75" color="#14223d"></a-ring>
+  </a-entity>
 
   <a-entity id="targetLayer"></a-entity>
   <a-entity id="effectLayer"></a-entity>
 
   <a-entity id="rig">
-    <a-camera id="camera" position="0 1.6 0" look-controls wasd-controls="enabled: false">
+    <a-camera id="camera" position="0 1.6 0" look-controls wasd-controls="enabled:false">
       <a-entity
         id="mouseRay"
-        cursor="rayOrigin: mouse; fuse: false"
-        raycaster="objects: .hit-target; far: 15"
+        cursor="rayOrigin:mouse; fuse:false"
+        raycaster="objects:.hit-target; far:20"
       ></a-entity>
     </a-camera>
 
     <a-entity
       id="leftHand"
-      laser-controls="hand: left"
-      raycaster="objects: .hit-target; far: 15"
-      line="color: #38dcff; opacity: .9"
+      laser-controls="hand:left"
+      raycaster="objects:.hit-target; far:20"
+      line="color:#46ddff; opacity:.9"
     ></a-entity>
 
     <a-entity
       id="rightHand"
-      laser-controls="hand: right"
-      raycaster="objects: .hit-target; far: 15"
-      line="color: #ff4fb4; opacity: .9"
+      laser-controls="hand:right"
+      raycaster="objects:.hit-target; far:20"
+      line="color:#ff5abf; opacity:.9"
     ></a-entity>
   </a-entity>
 </a-scene>
@@ -400,701 +495,841 @@
 (() => {
   "use strict";
 
-  // ============================================================
-  // CANCIÓN DE REFERENCIA
-  // ============================================================
-  const YOUTUBE_VIDEO_ID = "L5q4uYj-gyg";
-
-  // Timing conocido de mapas públicos de la pista.
+  /* ============================================================
+     CANCIÓN / REJILLA RÍTMICA
+     ============================================================ */
+  const VIDEO_ID = "L5q4uYj-gyg";
   const BPM = 176;
-  const BEAT = 60 / BPM;                  // 0.3409090909 s
-  const HALF_BEAT = BEAT / 2;             // corchea
-  const QUARTER_BEAT = BEAT / 4;          // semicorchea
-  const FIRST_BEAT = 0.321;               // 321 ms
-  const FIRST_GAME_NOTE = 11.230;          // referencia de entrada musical
-  const EXPECTED_DURATION = 234.0;         // ~3:54
-
-  // En WebXR / navegador damos algo más de tolerancia que osu! desktop.
-  const WINDOW_300_LOCAL = 0.055;
-  const WINDOW_100_LOCAL = 0.105;
-  const WINDOW_50_LOCAL  = 0.160;
-
-  const WINDOW_300_YT = 0.085;
-  const WINDOW_100_YT = 0.145;
-  const WINDOW_50_YT  = 0.215;
-
-  // Tiempo visible del approach circle.
+  const BEAT = 60 / BPM;
+  const HALF = BEAT / 2;
+  const FIRST_BEAT = 0.321;
   const APPROACH_TIME = 0.78;
+  const EXPECTED_DURATION = 234;
 
-  const palette = ["#38dcff", "#ff4fb4", "#9b74ff", "#89ff9b"];
-
-  // Coordenadas originales para nuestro mapa VR.
-  const points = [
-    [-1.95, 2.45], [-1.05, 2.60], [0.05, 2.35], [1.15, 2.62], [1.95, 2.30],
-    [-1.70, 1.70], [-0.80, 1.75], [0.10, 1.60], [1.05, 1.77], [1.85, 1.55],
-    [-1.82, 0.95], [-0.90, 1.05], [0.00, 0.85], [0.95, 1.08], [1.80, 0.95]
+  /* ============================================================
+     BANDAS DE FRECUENCIA
+     speed: velocidad visual relativa
+     ============================================================ */
+  const BANDS = [
+    {
+      key:"bass",
+      label:"GRAVES 20–120 Hz",
+      min:20,max:120,
+      color:"#ff5a64",
+      shape:"octagon",
+      speed:0.65,
+      scale:1.25
+    },
+    {
+      key:"lowmid",
+      label:"GRAVE–MEDIO 120–350 Hz",
+      min:120,max:350,
+      color:"#ff9f43",
+      shape:"dodeca",
+      speed:0.85,
+      scale:1.12
+    },
+    {
+      key:"mid",
+      label:"MEDIOS 350–2000 Hz",
+      min:350,max:2000,
+      color:"#ffe36e",
+      shape:"tetra",
+      speed:1.0,
+      scale:1.0
+    },
+    {
+      key:"high",
+      label:"AGUDOS 2–6 kHz",
+      min:2000,max:6000,
+      color:"#46ddff",
+      shape:"octa",
+      speed:1.35,
+      scale:.92
+    },
+    {
+      key:"air",
+      label:"MUY AGUDOS 6–16 kHz",
+      min:6000,max:16000,
+      color:"#c77dff",
+      shape:"icosa",
+      speed:1.7,
+      scale:.84
+    }
   ];
 
-  // ============================================================
-  // BEATMAP ORIGINAL CONSTRUIDO SOBRE LA REJILLA DE 176 BPM
-  // ============================================================
-  function gridTimeFromSeconds(seconds) {
-    const beatIndex = Math.round((seconds - FIRST_BEAT) / QUARTER_BEAT);
-    return FIRST_BEAT + beatIndex * QUARTER_BEAT;
-  }
+  const pcPositions = [
+    [-1.9,2.45],[-1.0,2.55],[0,2.35],[1.05,2.55],[1.9,2.3],
+    [-1.65,1.7],[-.75,1.72],[.1,1.6],[1.0,1.75],[1.8,1.55],
+    [-1.75,.95],[-.85,1.05],[0,.85],[.9,1.08],[1.75,.95]
+  ];
 
-  function buildBeatmap() {
-    const notes = [];
-    let id = 0;
+  /* ============================================================
+     ESTADO GENERAL
+     ============================================================ */
+  let gameMode = null; // "pc" | "vr"
+  let sourceMode = null; // "youtube" | "local"
+  let running = false;
+  let paused = false;
 
-    /*
-      Cada sección tiene:
-      start/end: segundos de la canción.
-      step: subdivisión de beat.
-      pattern: máscara rítmica; 1 crea nota, 0 crea descanso.
-      Esto NO copia un mapa de osu!: genera posiciones y secuencias propias.
-    */
-    const sections = [
-      // Intro jugable: patrón más respirado.
-      { start: 11.230, end: 43.90, step: HALF_BEAT, pattern: [1,0,1,1,0,1,0,1] },
-
-      // Primera subida.
-      { start: 43.90, end: 69.80, step: HALF_BEAT, pattern: [1,1,1,0,1,1,0,1] },
-
-      // Zona intensa: semicorcheas en ráfagas.
-      { start: 69.80, end: 100.00, step: QUARTER_BEAT, pattern: [1,1,0,1, 1,0,1,0, 1,1,1,0, 1,0,1,1] },
-
-      // Variación / respiro.
-      { start: 100.00, end: 126.00, step: HALF_BEAT, pattern: [1,0,1,1,1,0,1,0] },
-
-      // Segunda subida.
-      { start: 126.00, end: 145.00, step: HALF_BEAT, pattern: [1,1,0,1,1,1,0,1] },
-
-      // Clímax rápido.
-      { start: 145.00, end: 180.50, step: QUARTER_BEAT, pattern: [1,1,1,0, 1,1,0,1, 1,0,1,1, 1,1,0,0] },
-
-      // Sección de recuperación.
-      { start: 180.50, end: 197.70, step: BEAT, pattern: [1,1,0,1] },
-
-      // Última subida.
-      { start: 197.70, end: 215.40, step: HALF_BEAT, pattern: [1,1,1,0,1,0,1,1] },
-
-      // Final irregular / agresivo.
-      { start: 215.40, end: 232.80, step: QUARTER_BEAT, pattern: [1,0,1,1, 1,1,0,1, 0,1,1,1, 1,0,1,0] }
-    ];
-
-    sections.forEach((section, sectionIndex) => {
-      let t = gridTimeFromSeconds(section.start);
-      let pIndex = 0;
-
-      // Si el snap quedó antes del inicio, avanza.
-      while (t < section.start) t += section.step;
-
-      while (t < section.end) {
-        const use = section.pattern[pIndex % section.pattern.length];
-
-        if (use) {
-          // Secuencia geométrica determinista para no repetir posiciones contiguas.
-          const positionIndex =
-            (id * 7 + sectionIndex * 4 + Math.floor(id / 5) * 3) % points.length;
-
-          const pt = points[positionIndex];
-
-          notes.push({
-            id,
-            time: Number(t.toFixed(6)),
-            x: pt[0],
-            y: pt[1],
-            color: palette[Math.floor(id / 8) % palette.length],
-            number: (id % 8) + 1,
-            spawned: false,
-            resolved: false,
-            el: null,
-            approach: null
-          });
-
-          id++;
-        }
-
-        pIndex++;
-        t += section.step;
-      }
-    });
-
-    return notes;
-  }
-
-  const beatmap = buildBeatmap();
-
-  // ============================================================
-  // FUENTE DE AUDIO
-  // ============================================================
   let ytPlayer = null;
   let ytReady = false;
 
-  let sourceMode = null; // "youtube" o "local"
-  let running = false;
-  let paused = false;
-  let raf = 0;
+  let audioCtx = null;
+  let analyser = null;
+  let mediaSource = null;
+  let fftData = null;
 
-  const localAudio = document.getElementById("localAudio");
-  let localObjectUrl = null;
-
-  // YouTube API llama globalmente a esta función.
-  window.onYouTubeIframeAPIReady = function () {
-    ytPlayer = new YT.Player("ytPlayer", {
-      width: "220",
-      height: "124",
-      videoId: YOUTUBE_VIDEO_ID,
-      playerVars: {
-        playsinline: 1,
-        controls: 1,
-        rel: 0
-      },
-      events: {
-        onReady: () => {
-          ytReady = true;
-          document.getElementById("useYoutube").disabled = false;
-        }
-      }
-    });
-  };
-
-  // Si la API ya estaba cargada antes de este script.
-  if (window.YT && window.YT.Player && !ytPlayer) {
-    window.onYouTubeIframeAPIReady();
-  }
-
-  // ============================================================
-  // UI
-  // ============================================================
-  const startBtn = document.getElementById("startBtn");
-  const pauseBtn = document.getElementById("pauseBtn");
-  const restartBtn = document.getElementById("restartBtn");
-  const useYoutubeBtn = document.getElementById("useYoutube");
-  const audioFile = document.getElementById("audioFile");
-
-  const sourceStatus = document.getElementById("sourceStatus");
-  const offsetInput = document.getElementById("offset");
-  const offsetValue = document.getElementById("offsetValue");
-
-  const scoreEl = document.getElementById("score");
-  const accEl = document.getElementById("acc");
-  const comboEl = document.getElementById("combo");
-  const judgeEl = document.getElementById("judge");
-  const healthEl = document.getElementById("health");
-  const progressEl = document.getElementById("songProgress");
-  const cursorEl = document.getElementById("cursor");
-  const introEl = document.getElementById("intro");
-
-  const targetLayer = document.getElementById("targetLayer");
-  const effectLayer = document.getElementById("effectLayer");
+  let localUrl = null;
 
   let score = 0;
   let combo = 0;
   let maxCombo = 0;
   let hp = 100;
-
   let h300 = 0;
   let h100 = 0;
   let h50 = 0;
   let misses = 0;
 
-  let nextSpawn = 0;
+  let lastSpawnBeat = -1;
+  let lastObjectId = 0;
+  let raf = 0;
   let judgeTimer = 0;
 
   const active = new Map();
 
-  function offsetSeconds() {
-    return Number(offsetInput.value) / 1000;
+  /* ============================================================
+     DOM
+     ============================================================ */
+  const modeMenu = document.getElementById("modeMenu");
+  const gamePanel = document.getElementById("gamePanel");
+  const hud = document.getElementById("hud");
+
+  const selectPc = document.getElementById("selectPc");
+  const selectVr = document.getElementById("selectVr");
+
+  const panelTitle = document.getElementById("panelTitle");
+  const useYoutubeBtn = document.getElementById("useYoutube");
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const menuBtn = document.getElementById("menuBtn");
+  const audioFile = document.getElementById("audioFile");
+  const statusEl = document.getElementById("status");
+
+  const localAudio = document.getElementById("localAudio");
+  const targetLayer = document.getElementById("targetLayer");
+  const effectLayer = document.getElementById("effectLayer");
+
+  const pcBoard = document.getElementById("pcBoard");
+  const vrEnvironment = document.getElementById("vrEnvironment");
+  const camera = document.getElementById("camera");
+
+  const scoreEl = document.getElementById("score");
+  const accuracyEl = document.getElementById("accuracy");
+  const comboEl = document.getElementById("combo");
+  const healthEl = document.getElementById("health");
+  const modeBadge = document.getElementById("modeBadge");
+  const bandBadge = document.getElementById("bandBadge");
+  const judgeEl = document.getElementById("judge");
+  const progressEl = document.getElementById("progress");
+  const cursorEl = document.getElementById("cursor");
+
+  /* ============================================================
+     YOUTUBE
+     ============================================================ */
+  window.onYouTubeIframeAPIReady = function(){
+    ytPlayer = new YT.Player("ytPlayer",{
+      width:"200",
+      height:"112",
+      videoId:VIDEO_ID,
+      playerVars:{
+        playsinline:1,
+        controls:1,
+        rel:0
+      },
+      events:{
+        onReady:()=>{
+          ytReady = true;
+          useYoutubeBtn.disabled = false;
+        }
+      }
+    });
+  };
+
+  if(window.YT && window.YT.Player && !ytPlayer){
+    window.onYouTubeIframeAPIReady();
   }
 
-  offsetInput.addEventListener("input", () => {
-    offsetValue.textContent = `${offsetInput.value} ms`;
+  /* ============================================================
+     MODO PC / VR
+     ============================================================ */
+  function chooseMode(mode){
+    gameMode = mode;
+
+    modeMenu.style.display = "none";
+    gamePanel.style.display = "block";
+    hud.style.display = "block";
+
+    pcBoard.setAttribute("visible",mode === "pc");
+    vrEnvironment.setAttribute("visible",mode === "vr");
+
+    if(mode === "pc"){
+      panelTitle.textContent = "TENEBRE RHYTHM — MODO PC";
+      modeBadge.textContent = "MODO: PC · PANTALLA FRONTAL";
+      cursorEl.style.display = "block";
+
+      camera.setAttribute("look-controls","enabled:false");
+      camera.setAttribute("rotation","0 0 0");
+    }else{
+      panelTitle.textContent = "TENEBRE RHYTHM — MODO VR 360°";
+      modeBadge.textContent = "MODO: VR · ENTORNO 360°";
+      cursorEl.style.display = "none";
+
+      camera.setAttribute("look-controls","enabled:true");
+    }
+  }
+
+  selectPc.addEventListener("click",()=>chooseMode("pc"));
+  selectVr.addEventListener("click",()=>chooseMode("vr"));
+
+  menuBtn.addEventListener("click",()=>{
+    stopGame();
+    modeMenu.style.display = "flex";
+    gamePanel.style.display = "none";
+    hud.style.display = "none";
   });
 
-  // ============================================================
-  // SELECCIÓN DE AUDIO
-  // ============================================================
-  useYoutubeBtn.addEventListener("click", () => {
-    if (!ytReady) {
-      sourceStatus.textContent = "YouTube todavía está cargando…";
+  /* ============================================================
+     AUDIO LOCAL + ANALIZADOR DE FRECUENCIAS
+     ============================================================ */
+  function ensureAudioAnalyser(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if(audioCtx.state === "suspended"){
+      audioCtx.resume();
+    }
+
+    if(!analyser){
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = .68;
+      fftData = new Uint8Array(analyser.frequencyBinCount);
+    }
+
+    if(!mediaSource){
+      mediaSource = audioCtx.createMediaElementSource(localAudio);
+      mediaSource.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+  }
+
+  audioFile.addEventListener("change",event=>{
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+
+    if(localUrl) URL.revokeObjectURL(localUrl);
+    localUrl = URL.createObjectURL(file);
+
+    localAudio.src = localUrl;
+    sourceMode = "local";
+
+    ensureAudioAnalyser();
+
+    statusEl.textContent =
+      `Audio local: ${file.name}. Análisis FFT real activado.`;
+
+    startBtn.disabled = false;
+
+    if(ytPlayer && ytReady){
+      try{ ytPlayer.pauseVideo(); }catch(_){}
+    }
+  });
+
+  useYoutubeBtn.addEventListener("click",()=>{
+    if(!ytReady){
+      statusEl.textContent = "YouTube aún está cargando…";
       return;
     }
 
     sourceMode = "youtube";
-    sourceStatus.textContent =
-      "Fuente: YouTube. Para precisión competitiva/VR se recomienda archivo local.";
+    statusEl.textContent =
+      "YouTube activo. Las bandas se estiman desde el patrón musical del beatmap; para análisis FFT real usa audio local.";
+
     startBtn.disabled = false;
   });
 
-  audioFile.addEventListener("change", event => {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-
-    if (localObjectUrl) URL.revokeObjectURL(localObjectUrl);
-    localObjectUrl = URL.createObjectURL(file);
-    localAudio.src = localObjectUrl;
-
-    sourceMode = "local";
-    sourceStatus.textContent = `Fuente local: ${file.name}`;
-    startBtn.disabled = false;
-
-    if (ytPlayer && ytReady) {
-      try { ytPlayer.pauseVideo(); } catch (_) {}
+  /* ============================================================
+     RELOJ DE AUDIO
+     ============================================================ */
+  function audioTime(){
+    if(sourceMode === "local"){
+      return localAudio.currentTime || 0;
     }
-  });
 
-  // ============================================================
-  // RELOJ: el juego SIEMPRE se guía por el audio
-  // ============================================================
-  function audioTime() {
-    let t = 0;
-
-    if (sourceMode === "youtube") {
-      if (!ytPlayer || !ytReady) return 0;
-      try {
-        t = Number(ytPlayer.getCurrentTime()) || 0;
-      } catch (_) {
-        t = 0;
+    if(sourceMode === "youtube" && ytPlayer && ytReady){
+      try{
+        return Number(ytPlayer.getCurrentTime()) || 0;
+      }catch(_){
+        return 0;
       }
-    } else if (sourceMode === "local") {
-      t = localAudio.currentTime || 0;
     }
 
-    return t + offsetSeconds();
+    return 0;
   }
 
-  function duration() {
-    if (sourceMode === "local" && Number.isFinite(localAudio.duration)) {
+  function audioDuration(){
+    if(sourceMode === "local" && Number.isFinite(localAudio.duration)){
       return localAudio.duration;
     }
     return EXPECTED_DURATION;
   }
 
-  function windows() {
-    if (sourceMode === "youtube") {
-      return {
-        w300: WINDOW_300_YT,
-        w100: WINDOW_100_YT,
-        w50: WINDOW_50_YT
-      };
+  /* ============================================================
+     ANÁLISIS DE FRECUENCIA
+     ============================================================ */
+  function bandEnergy(minHz,maxHz){
+    if(!analyser || !audioCtx || !fftData) return 0;
+
+    analyser.getByteFrequencyData(fftData);
+
+    const nyquist = audioCtx.sampleRate / 2;
+    const binHz = nyquist / fftData.length;
+
+    const start = Math.max(0,Math.floor(minHz / binHz));
+    const end = Math.min(fftData.length - 1,Math.ceil(maxHz / binHz));
+
+    if(end <= start) return 0;
+
+    let sum = 0;
+    let count = 0;
+
+    for(let i=start;i<=end;i++){
+      sum += fftData[i];
+      count++;
     }
 
-    return {
-      w300: WINDOW_300_LOCAL,
-      w100: WINDOW_100_LOCAL,
-      w50: WINDOW_50_LOCAL
-    };
+    return count ? sum / count : 0;
   }
 
-  // ============================================================
-  // HIT OBJECTS
-  // ============================================================
-  function createCircle(note) {
+  function dominantBandFromAudio(){
+    let best = BANDS[0];
+    let bestEnergy = -1;
+
+    for(const band of BANDS){
+      const energy = bandEnergy(band.min,band.max);
+
+      // normalización suave: evita que graves dominen siempre
+      const compensation =
+        band.key === "bass" ? .88 :
+        band.key === "lowmid" ? .95 :
+        band.key === "air" ? 1.18 :
+        1.0;
+
+      const adjusted = energy * compensation;
+
+      if(adjusted > bestEnergy){
+        bestEnergy = adjusted;
+        best = band;
+      }
+    }
+
+    return best;
+  }
+
+  function estimatedBandFromBeat(beatIndex){
+    // Perfil musical alternado para YouTube, sincronizado a 176 BPM.
+    // No pretende reemplazar un análisis FFT real.
+    const sequence = [
+      "bass","bass","mid","high",
+      "lowmid","mid","high","air",
+      "bass","mid","mid","high",
+      "lowmid","high","air","mid"
+    ];
+
+    const key = sequence[beatIndex % sequence.length];
+    return BANDS.find(b=>b.key === key) || BANDS[2];
+  }
+
+  function currentBand(beatIndex){
+    if(sourceMode === "local"){
+      return dominantBandFromAudio();
+    }
+    return estimatedBandFromBeat(beatIndex);
+  }
+
+  /* ============================================================
+     POSICIONES
+     ============================================================ */
+  function pcPosition(id){
+    const p = pcPositions[(id * 7 + Math.floor(id/4)*3) % pcPositions.length];
+    return {x:p[0],y:p[1],z:-4.02};
+  }
+
+  function vrRandomPosition(id){
+    // RNG pseudoaleatorio determinista por id.
+    const rand = n => {
+      const x = Math.sin((id + 1) * 12.9898 + n * 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
+
+    // 360° horizontal. Elevación limitada para comodidad física.
+    let yaw = rand(1) * Math.PI * 2;
+    let elevation = (-28 + rand(2) * 76) * Math.PI / 180;
+    let radius = 2.3 + rand(3) * 2.1;
+
+    // Jugador aprox. a y=1.6.
+    const x = Math.sin(yaw) * Math.cos(elevation) * radius;
+    const z = -Math.cos(yaw) * Math.cos(elevation) * radius;
+    const y = 1.6 + Math.sin(elevation) * radius;
+
+    return {x,y,z};
+  }
+
+  /* ============================================================
+     GEOMETRÍAS POR FRECUENCIA
+     ============================================================ */
+  function makeShape(band){
+    let el;
+
+    if(band.shape === "octagon"){
+      // Prisma octagonal real: cilindro con 8 segmentos.
+      el = document.createElement("a-cylinder");
+      el.setAttribute("radius",".28");
+      el.setAttribute("height",".16");
+      el.setAttribute("segments-radial","8");
+      el.setAttribute("rotation","90 0 0");
+    }
+    else if(band.shape === "dodeca"){
+      el = document.createElement("a-dodecahedron");
+      el.setAttribute("radius",".30");
+    }
+    else if(band.shape === "tetra"){
+      el = document.createElement("a-tetrahedron");
+      el.setAttribute("radius",".34");
+    }
+    else if(band.shape === "octa"){
+      el = document.createElement("a-octahedron");
+      el.setAttribute("radius",".34");
+    }
+    else{
+      el = document.createElement("a-icosahedron");
+      el.setAttribute("radius",".30");
+    }
+
+    el.setAttribute("color",band.color);
+    el.setAttribute(
+      "material",
+      "shader:standard; metalness:.18; roughness:.38; emissive:" + band.color + "; emissiveIntensity:.13"
+    );
+
+    el.classList.add("hit-target");
+    return el;
+  }
+
+  function makeApproachRing(band){
+    const ring = document.createElement("a-ring");
+    ring.setAttribute("radius-inner",".37");
+    ring.setAttribute("radius-outer",".395");
+    ring.setAttribute("color",band.color);
+    ring.setAttribute("material","shader:flat; opacity:.92; side:double");
+    ring.setAttribute("scale","4 4 4");
+    return ring;
+  }
+
+  /* ============================================================
+     HIT OBJECT
+     ============================================================ */
+  function spawnObject(beatIndex,hitTime,band){
+    const id = lastObjectId++;
     const root = document.createElement("a-entity");
-    root.setAttribute("position", `${note.x} ${note.y} -4.03`);
-    root.setAttribute("scale", ".55 .55 .55");
 
-    const shadow = document.createElement("a-circle");
-    shadow.setAttribute("radius", ".31");
-    shadow.setAttribute("position", ".025 -.025 -.006");
-    shadow.setAttribute("color", "#000");
-    shadow.setAttribute("material", "shader: flat; opacity: .55");
+    const pos = gameMode === "pc" ? pcPosition(id) : vrRandomPosition(id);
+    root.setAttribute("position",`${pos.x} ${pos.y} ${pos.z}`);
 
-    const white = document.createElement("a-circle");
-    white.setAttribute("radius", ".29");
-    white.setAttribute("color", "#fff");
-    white.setAttribute("material", "shader: flat");
+    // En VR apuntar al centro mejora legibilidad de polígonos.
+    if(gameMode === "vr"){
+      root.setAttribute("look-at","#camera");
+    }
 
-    const core = document.createElement("a-circle");
-    core.setAttribute("radius", ".238");
-    core.setAttribute("position", "0 0 .006");
-    core.setAttribute("color", note.color);
-    core.setAttribute("material", "shader: flat; opacity: .96");
-    core.classList.add("hit-target");
-    core.dataset.noteId = String(note.id);
+    const shape = makeShape(band);
+    shape.dataset.objectId = String(id);
 
-    const number = document.createElement("a-text");
-    number.setAttribute("value", String(note.number));
-    number.setAttribute("align", "center");
-    number.setAttribute("anchor", "center");
-    number.setAttribute("baseline", "center");
-    number.setAttribute("position", "0 0 .014");
-    number.setAttribute("width", "2.4");
-    number.setAttribute("color", "#fff");
+    const ring = makeApproachRing(band);
 
-    const approach = document.createElement("a-ring");
-    approach.setAttribute("radius-inner", ".307");
-    approach.setAttribute("radius-outer", ".327");
-    approach.setAttribute("position", "0 0 .018");
-    approach.setAttribute("color", note.color);
-    approach.setAttribute("material", "shader: flat; opacity: .96; side: double");
-    approach.setAttribute("scale", "4 4 4");
-
-    root.append(shadow, white, core, number, approach);
-
-    core.addEventListener("click", event => {
-      event.stopPropagation();
-      attemptHit(note.id);
-    });
+    // En VR el ring se orienta hacia cámara por estar en el mismo root.
+    root.append(shape,ring);
 
     targetLayer.appendChild(root);
 
-    note.el = root;
-    note.approach = approach;
-    note.spawned = true;
-    active.set(note.id, note);
+    const obj = {
+      id,
+      beatIndex,
+      hitTime,
+      band,
+      root,
+      shape,
+      ring,
+      resolved:false
+    };
+
+    active.set(id,obj);
+
+    shape.addEventListener("click",event=>{
+      event.stopPropagation();
+      attemptHit(id);
+    });
+
+    const baseScale = band.scale;
 
     root.setAttribute(
       "animation__spawn",
-      "property: scale; to: 1 1 1; dur: 80; easing: easeOutQuad"
+      `property:scale; from:${baseScale*.35} ${baseScale*.35} ${baseScale*.35}; to:${baseScale} ${baseScale} ${baseScale}; dur:90; easing:easeOutQuad`
     );
+
+    // Rotación: rápido para agudos, lento para graves.
+    const rotationDur = Math.round(2600 / band.speed);
+
+    root.setAttribute(
+      "animation__spin",
+      `property:rotation; to:0 360 360; loop:true; dur:${rotationDur}; easing:linear`
+    );
+
+    bandBadge.textContent = `FRECUENCIA: ${band.label}`;
+    bandBadge.style.color = band.color;
   }
 
-  function removeCircle(note) {
-    active.delete(note.id);
-
-    if (note.el && note.el.parentNode) {
-      note.el.parentNode.removeChild(note.el);
+  function removeObject(obj){
+    active.delete(obj.id);
+    if(obj.root && obj.root.parentNode){
+      obj.root.parentNode.removeChild(obj.root);
     }
-
-    note.el = null;
-    note.approach = null;
   }
 
-  function showWorldResult(note, text, color) {
-    const e = document.createElement("a-text");
-    e.setAttribute("position", `${note.x} ${note.y} -3.96`);
-    e.setAttribute("value", String(text));
-    e.setAttribute("align", "center");
-    e.setAttribute("width", "2");
-    e.setAttribute("color", color);
-
-    effectLayer.appendChild(e);
-
-    e.setAttribute(
-      "animation__up",
-      `property: position; to: ${note.x} ${note.y + .28} -3.95; dur: 360; easing: easeOutQuad`
-    );
-
-    setTimeout(() => {
-      if (e.parentNode) e.parentNode.removeChild(e);
-    }, 380);
+  /* ============================================================
+     JUICIO
+     ============================================================ */
+  function windows(){
+    if(sourceMode === "youtube"){
+      return {w300:.085,w100:.145,w50:.215};
+    }
+    return {w300:.055,w100:.105,w50:.160};
   }
 
-  // ============================================================
-  // SCORE / JUICIO
-  // ============================================================
-  function accuracy() {
-    const total = h300 + h100 + h50 + misses;
-    if (!total) return 100;
-
-    return (
-      (h300 * 300 + h100 * 100 + h50 * 50) /
-      (total * 300)
-    ) * 100;
+  function accuracy(){
+    const total = h300+h100+h50+misses;
+    if(!total) return 100;
+    return ((h300*300+h100*100+h50*50)/(total*300))*100;
   }
 
-  function updateHud() {
-    scoreEl.textContent = String(score).padStart(8, "0");
-    accEl.textContent = `${accuracy().toFixed(2)}%`;
-    comboEl.innerHTML = `${combo}x<span>COMBO</span>`;
-    healthEl.style.width = `${Math.max(0, Math.min(100, hp))}%`;
+  function updateHud(){
+    scoreEl.textContent = String(score).padStart(8,"0");
+    accuracyEl.textContent = accuracy().toFixed(2)+"%";
+    comboEl.innerHTML = `${combo}x<small>COMBO</small>`;
+    healthEl.style.width = `${Math.max(0,Math.min(100,hp))}%`;
   }
 
-  function showJudge(value, errorMs) {
-    let color = "#fff";
-    if (value === 300) color = "#75e5ff";
-    else if (value === 100) color = "#8cff9d";
-    else if (value === 50) color = "#ffe36e";
-    else color = "#ff5364";
+  function showJudge(value,errorMs,band){
+    const color =
+      value===300 ? "#75e5ff" :
+      value===100 ? "#89ff9b" :
+      value===50 ? "#ffe36e" :
+      "#ff5364";
 
     judgeEl.textContent =
-      value === 0 ? "MISS" : `${value}  ${errorMs >= 0 ? "+" : ""}${Math.round(errorMs)}ms`;
+      value===0 ? "MISS" : `${value} ${errorMs>=0?"+":""}${Math.round(errorMs)}ms`;
 
     judgeEl.style.color = color;
     judgeEl.classList.add("show");
 
-    clearTimeout(judgeTimer);
-    judgeTimer = setTimeout(() => judgeEl.classList.remove("show"), 210);
-  }
-
-  function attemptHit(id) {
-    if (!running || paused) return;
-
-    const note = beatmap[id];
-    if (!note || note.resolved || !note.spawned) return;
-
-    // Notelock simple: prioriza el objeto anterior.
-    for (const current of active.values()) {
-      if (!current.resolved && current.id < id) return;
+    if(band){
+      bandBadge.textContent = `FRECUENCIA: ${band.label}`;
+      bandBadge.style.color = band.color;
     }
 
-    const t = audioTime();
-    const error = t - note.time;
-    const absError = Math.abs(error);
+    clearTimeout(judgeTimer);
+    judgeTimer = setTimeout(()=>judgeEl.classList.remove("show"),220);
+  }
 
+  function attemptHit(id){
+    if(!running || paused) return;
+
+    const obj = active.get(id);
+    if(!obj || obj.resolved) return;
+
+    const error = audioTime() - obj.hitTime;
+    const abs = Math.abs(error);
     const w = windows();
 
-    // Demasiado pronto: no consume la nota.
-    if (error < -w.w50) {
-      if (note.el) {
-        note.el.setAttribute(
-          "animation__shake",
-          "property: rotation; from: 0 0 -3; to: 0 0 3; dir: alternate; loop: 2; dur: 30"
-        );
-      }
-      return;
-    }
+    if(error < -w.w50) return;
 
-    if (absError <= w.w300) {
-      resolveHit(note, 300, error);
-    } else if (absError <= w.w100) {
-      resolveHit(note, 100, error);
-    } else if (absError <= w.w50) {
-      resolveHit(note, 50, error);
-    }
+    if(abs <= w.w300) resolveHit(obj,300,error);
+    else if(abs <= w.w100) resolveHit(obj,100,error);
+    else if(abs <= w.w50) resolveHit(obj,50,error);
   }
 
-  function resolveHit(note, value, errorSeconds) {
-    if (note.resolved) return;
-    note.resolved = true;
+  function resolveHit(obj,value,error){
+    if(obj.resolved) return;
+    obj.resolved = true;
 
     combo++;
-    maxCombo = Math.max(maxCombo, combo);
+    maxCombo = Math.max(maxCombo,combo);
 
-    const baseBonus = Math.floor(Math.max(combo - 1, 0) * value * .08);
-    score += value + baseBonus;
+    score += value + Math.floor(Math.max(0,combo-1)*value*.08);
 
-    if (value === 300) {
+    if(value===300){
       h300++;
-      hp = Math.min(100, hp + 2.5);
-    } else if (value === 100) {
+      hp = Math.min(100,hp+2.4);
+    }else if(value===100){
       h100++;
-      hp = Math.min(100, hp + .8);
-    } else {
+      hp = Math.min(100,hp+.8);
+    }else{
       h50++;
-      hp = Math.max(0, hp - 1.2);
+      hp = Math.max(0,hp-1.2);
     }
 
-    const color =
-      value === 300 ? "#75e5ff" :
-      value === 100 ? "#8cff9d" :
-      "#ffe36e";
+    showJudge(value,error*1000,obj.band);
 
-    showWorldResult(note, value, color);
-    showJudge(value, errorSeconds * 1000);
+    obj.root.setAttribute(
+      "animation__hit",
+      "property:scale; to:1.6 1.6 1.6; dur:70; easing:easeOutQuad"
+    );
 
-    if (note.el) {
-      note.el.setAttribute(
-        "animation__hit",
-        "property: scale; to: 1.35 1.35 1.35; dur: 70; easing: easeOutQuad"
-      );
-    }
-
-    setTimeout(() => removeCircle(note), 75);
+    setTimeout(()=>removeObject(obj),75);
     updateHud();
   }
 
-  function miss(note) {
-    if (note.resolved) return;
-    note.resolved = true;
+  function miss(obj){
+    if(obj.resolved) return;
+    obj.resolved = true;
 
     combo = 0;
     misses++;
-    hp = Math.max(0, hp - 7);
+    hp = Math.max(0,hp-7);
 
-    showWorldResult(note, "MISS", "#ff5364");
-    showJudge(0, 0);
-
-    removeCircle(note);
+    showJudge(0,0,obj.band);
+    removeObject(obj);
     updateHud();
   }
 
-  // ============================================================
-  // GAME LOOP SINCRONIZADO AL AUDIO
-  // ============================================================
-  function spawnNotes(t) {
-    while (
-      nextSpawn < beatmap.length &&
-      beatmap[nextSpawn].time - APPROACH_TIME <= t
-    ) {
-      const note = beatmap[nextSpawn];
+  /* ============================================================
+     GAME LOOP
+     ============================================================ */
+  function spawnFromBeatGrid(t){
+    const currentBeat = Math.floor((t - FIRST_BEAT)/HALF);
 
-      if (!note.spawned && !note.resolved) {
-        createCircle(note);
-      }
+    if(currentBeat < 0) return;
 
-      nextSpawn++;
+    // genera todos los beats no procesados
+    while(lastSpawnBeat < currentBeat + Math.ceil(APPROACH_TIME/HALF)){
+      lastSpawnBeat++;
+
+      const hitTime = FIRST_BEAT + lastSpawnBeat * HALF;
+
+      if(hitTime < 11.2) continue;
+      if(hitTime > audioDuration()) break;
+
+      // Ritmo con descansos: las secciones más rápidas aumentan densidad.
+      const section =
+        hitTime < 44 ? 0 :
+        hitTime < 70 ? 1 :
+        hitTime < 100 ? 2 :
+        hitTime < 126 ? 1 :
+        hitTime < 145 ? 2 :
+        hitTime < 181 ? 3 :
+        hitTime < 198 ? 0 :
+        hitTime < 216 ? 2 :
+        3;
+
+      const masks = [
+        [1,0,1,0,1,0,1,0],
+        [1,1,0,1,1,0,1,0],
+        [1,1,1,0,1,1,0,1],
+        [1,1,1,1,1,0,1,1]
+      ];
+
+      const mask = masks[section];
+
+      if(!mask[lastSpawnBeat % mask.length]) continue;
+
+      // Para no crear demasiado pronto fuera de approach time.
+      if(hitTime - t > APPROACH_TIME + HALF) continue;
+
+      const band = currentBand(lastSpawnBeat);
+      spawnObject(lastSpawnBeat,hitTime,band);
     }
   }
 
-  function updateNotes(t) {
+  function updateObjects(t){
     const w = windows();
 
-    active.forEach(note => {
-      if (note.resolved) return;
+    active.forEach(obj=>{
+      if(obj.resolved) return;
 
-      const left = note.time - t;
-      const progress = Math.max(0, Math.min(1, left / APPROACH_TIME));
-      const scale = 1 + progress * 3;
+      const remaining = obj.hitTime - t;
+      const approachProgress =
+        Math.max(0,Math.min(1,remaining/APPROACH_TIME));
 
-      if (note.approach) {
-        note.approach.setAttribute("scale", `${scale} ${scale} ${scale}`);
+      const approachScale = 1 + approachProgress*3;
+      obj.ring.setAttribute("scale",
+        `${approachScale} ${approachScale} ${approachScale}`);
+
+      // PULSO por frecuencia:
+      // graves = lento; agudos = rápido.
+      const pulsePhase =
+        (performance.now()/1000) *
+        (2*Math.PI) *
+        obj.band.speed;
+
+      const pulse = 1 + Math.sin(pulsePhase)*.055;
+      const s = obj.band.scale*pulse;
+      obj.shape.setAttribute("scale",`${s} ${s} ${s}`);
+
+      // En VR los objetos "respiran" ligeramente hacia el usuario.
+      if(gameMode === "vr"){
+        const base = obj.root.object3D.position;
+        // Sin desplazar permanentemente la posición; solo un pequeño pulso z local.
+        obj.shape.object3D.position.z = Math.sin(pulsePhase)*.025;
       }
 
-      if (t > note.time + w.w50) {
-        miss(note);
+      if(t > obj.hitTime + w.w50){
+        miss(obj);
       }
     });
   }
 
-  function loop() {
-    if (!running) return;
+  function gameLoop(){
+    if(!running) return;
 
-    if (!paused) {
+    if(!paused){
       const t = audioTime();
 
-      spawnNotes(t);
-      updateNotes(t);
+      spawnFromBeatGrid(t);
+      updateObjects(t);
 
-      const d = duration();
-      progressEl.style.width = `${Math.max(0, Math.min(100, (t / d) * 100))}%`;
+      const d = audioDuration();
+      progressEl.style.width =
+        `${Math.max(0,Math.min(100,(t/d)*100))}%`;
 
-      if (t >= Math.min(d, EXPECTED_DURATION) - .25) {
-        finish();
+      if(t >= d-.15){
+        finishGame();
         return;
       }
     }
 
-    raf = requestAnimationFrame(loop);
+    raf = requestAnimationFrame(gameLoop);
   }
 
-  // ============================================================
-  // INICIAR / PAUSAR / REINICIAR
-  // ============================================================
-  function resetMap() {
+  /* ============================================================
+     START / PAUSE / RESET
+     ============================================================ */
+  function resetState(){
     cancelAnimationFrame(raf);
 
-    beatmap.forEach(note => {
-      note.spawned = false;
-      note.resolved = false;
-      note.el = null;
-      note.approach = null;
-    });
-
-    active.clear();
     targetLayer.innerHTML = "";
     effectLayer.innerHTML = "";
-
-    nextSpawn = 0;
+    active.clear();
 
     score = 0;
     combo = 0;
     maxCombo = 0;
     hp = 100;
-
     h300 = 0;
     h100 = 0;
     h50 = 0;
     misses = 0;
 
+    lastSpawnBeat = -1;
+    lastObjectId = 0;
+
     progressEl.style.width = "0%";
+    bandBadge.textContent = "FRECUENCIA: —";
+    bandBadge.style.color = "#fff";
+
     updateHud();
   }
 
-  async function start() {
-    if (!sourceMode) return;
+  async function startGame(){
+    if(!sourceMode || !gameMode) return;
 
-    resetMap();
+    resetState();
 
     running = true;
     paused = false;
-
-    introEl.style.display = "none";
-    cursorEl.style.display = "block";
 
     startBtn.disabled = true;
     pauseBtn.disabled = false;
     pauseBtn.textContent = "PAUSA";
 
-    if (sourceMode === "youtube") {
-      if (!ytPlayer || !ytReady) return;
+    if(gameMode === "pc") cursorEl.style.display = "block";
 
-      try {
-        ytPlayer.seekTo(0, true);
-        ytPlayer.playVideo();
-      } catch (_) {}
-    } else {
+    if(sourceMode === "local"){
+      ensureAudioAnalyser();
       localAudio.currentTime = 0;
 
-      try {
+      try{
         await localAudio.play();
-      } catch (error) {
-        sourceStatus.textContent = "No fue posible iniciar el audio local.";
+      }catch(_){
+        statusEl.textContent = "No fue posible reproducir el audio local.";
         running = false;
         startBtn.disabled = false;
         return;
       }
+    }else{
+      try{
+        ytPlayer.seekTo(0,true);
+        ytPlayer.playVideo();
+      }catch(_){}
     }
 
-    loop();
+    gameLoop();
   }
 
-  function pause() {
-    if (!running) return;
+  function togglePause(){
+    if(!running) return;
 
     paused = !paused;
+    pauseBtn.textContent = paused ? "CONTINUAR" : "PAUSA";
 
-    if (paused) {
-      pauseBtn.textContent = "CONTINUAR";
-
-      if (sourceMode === "youtube") {
-        try { ytPlayer.pauseVideo(); } catch (_) {}
-      } else {
-        localAudio.pause();
-      }
-    } else {
-      pauseBtn.textContent = "PAUSA";
-
-      if (sourceMode === "youtube") {
-        try { ytPlayer.playVideo(); } catch (_) {}
-      } else {
-        localAudio.play().catch(() => {});
-      }
+    if(sourceMode === "local"){
+      if(paused) localAudio.pause();
+      else localAudio.play().catch(()=>{});
+    }else if(ytPlayer && ytReady){
+      try{
+        if(paused) ytPlayer.pauseVideo();
+        else ytPlayer.playVideo();
+      }catch(_){}
     }
   }
 
-  function restart() {
+  function stopGame(){
     running = false;
     paused = false;
 
     cancelAnimationFrame(raf);
 
-    if (sourceMode === "youtube" && ytPlayer && ytReady) {
-      try {
-        ytPlayer.pauseVideo();
-        ytPlayer.seekTo(0, true);
-      } catch (_) {}
-    }
-
-    if (sourceMode === "local") {
+    if(sourceMode === "local"){
       localAudio.pause();
       localAudio.currentTime = 0;
     }
 
-    resetMap();
+    if(sourceMode === "youtube" && ytPlayer && ytReady){
+      try{
+        ytPlayer.pauseVideo();
+        ytPlayer.seekTo(0,true);
+      }catch(_){}
+    }
 
+    resetState();
     startBtn.disabled = !sourceMode;
     pauseBtn.disabled = true;
     pauseBtn.textContent = "PAUSA";
-
     cursorEl.style.display = "none";
-    introEl.style.display = "block";
   }
 
-  function finish() {
+  function finishGame(){
     running = false;
     cancelAnimationFrame(raf);
 
@@ -1103,83 +1338,84 @@
 
     startBtn.disabled = false;
     pauseBtn.disabled = true;
-    cursorEl.style.display = "none";
 
     judgeEl.innerHTML =
-      `${accuracy().toFixed(2)}%<br>` +
+      `${accuracy().toFixed(2)}%<br>`+
       `<span style="font-size:16px">300:${h300} · 100:${h100} · 50:${h50} · MISS:${misses} · MAX ${maxCombo}x</span>`;
+
     judgeEl.style.color = "#fff";
     judgeEl.classList.add("show");
   }
 
-  startBtn.addEventListener("click", start);
-  pauseBtn.addEventListener("click", pause);
-  restartBtn.addEventListener("click", restart);
+  startBtn.addEventListener("click",startGame);
+  pauseBtn.addEventListener("click",togglePause);
+  restartBtn.addEventListener("click",stopGame);
 
-  // ============================================================
-  // INPUT PC
-  // ============================================================
-  window.addEventListener("mousemove", event => {
-    cursorEl.style.left = `${event.clientX}px`;
-    cursorEl.style.top = `${event.clientY}px`;
+  /* ============================================================
+     INPUT PC
+     ============================================================ */
+  window.addEventListener("mousemove",event=>{
+    cursorEl.style.left = event.clientX+"px";
+    cursorEl.style.top = event.clientY+"px";
   });
 
-  function hitHovered() {
-    if (!running || paused) return;
+  function hitHoveredMouse(){
+    if(!running || paused || gameMode!=="pc") return;
 
-    const entity = document.getElementById("mouseRay");
-    if (!entity || !entity.components || !entity.components.raycaster) return;
+    const rayEntity = document.getElementById("mouseRay");
+    const ray = rayEntity.components && rayEntity.components.raycaster;
+    if(!ray) return;
 
-    const intersections = entity.components.raycaster.intersectedEls || [];
-    const target = intersections.find(el => el.classList.contains("hit-target"));
+    const hit = (ray.intersectedEls || [])
+      .find(el=>el.classList.contains("hit-target"));
 
-    if (!target) return;
+    if(!hit) return;
 
-    const id = Number(target.dataset.noteId);
-    if (Number.isInteger(id)) attemptHit(id);
+    const id = Number(hit.dataset.objectId);
+    if(Number.isInteger(id)) attemptHit(id);
   }
 
-  window.addEventListener("keydown", event => {
-    if (event.repeat) return;
+  window.addEventListener("keydown",event=>{
+    if(event.repeat) return;
 
-    if (
-      event.code === "KeyZ" ||
-      event.code === "KeyX" ||
-      event.code === "Space"
-    ) {
+    if(
+      event.code==="KeyZ" ||
+      event.code==="KeyX" ||
+      event.code==="Space"
+    ){
       event.preventDefault();
-      hitHovered();
+      hitHoveredMouse();
     }
 
-    if (event.code === "Escape" && running) {
-      pause();
+    if(event.code==="Escape" && running){
+      togglePause();
     }
   });
 
-  // ============================================================
-  // INPUT META QUEST / WEBXR
-  // ============================================================
-  function bindVrHand(id) {
-    const hand = document.getElementById(id);
+  /* ============================================================
+     INPUT VR
+     ============================================================ */
+  function bindHand(handId){
+    const hand = document.getElementById(handId);
 
-    hand.addEventListener("triggerdown", () => {
-      if (!running || paused) return;
+    hand.addEventListener("triggerdown",()=>{
+      if(!running || paused || gameMode!=="vr") return;
 
       const ray = hand.components && hand.components.raycaster;
-      if (!ray) return;
+      if(!ray) return;
 
-      const intersections = ray.intersectedEls || [];
-      const target = intersections.find(el => el.classList.contains("hit-target"));
+      const hit = (ray.intersectedEls || [])
+        .find(el=>el.classList.contains("hit-target"));
 
-      if (!target) return;
+      if(!hit) return;
 
-      const noteId = Number(target.dataset.noteId);
-      if (Number.isInteger(noteId)) attemptHit(noteId);
+      const id = Number(hit.dataset.objectId);
+      if(Number.isInteger(id)) attemptHit(id);
     });
   }
 
-  bindVrHand("leftHand");
-  bindVrHand("rightHand");
+  bindHand("leftHand");
+  bindHand("rightHand");
 
   updateHud();
 })();
